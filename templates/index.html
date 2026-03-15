@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Victor's Edge — Stock Analysis</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1 class="logo">
+                <svg class="logo-icon" width="28" height="28" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="#58a6ff"/>
+                    <path d="M7 22L13 16L17 19L25 10" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M21 10H25V14" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Victor's <span class="accent">Edge</span>
+            </h1>
+            <div class="header-market-toggle">
+                <button class="btn-market-pill active" data-market="set"><span class="market-flag">🇹🇭</span>SET</button>
+                <button class="btn-market-pill" data-market="us"><span class="market-flag">🇺🇸</span>US</button>
+            </div>
+        </div>
+        <div class="header-right">
+            <button id="portfolio-btn" class="btn-icon" title="Portfolio">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+                Portfolio
+            </button>
+            <button id="compare-toggle" class="btn-icon" title="Compare two stocks">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </button>
+            <button id="settings-btn" class="btn-icon" title="Settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+            <button id="lang-toggle" class="btn-icon" title="Switch language">EN / TH</button>
+        </div>
+    </header>
+
+    <!-- Sticky Price Bar -->
+    <div class="price-bar hidden" id="price-bar">
+        <div class="price-bar-inner">
+            <span class="pb-ticker" id="pb-ticker"></span>
+            <span class="pb-price" id="pb-price"></span>
+            <span class="pb-change" id="pb-change"></span>
+            <span class="pb-signal" id="pb-signal"></span>
+            <button class="pb-position-btn" id="pb-position-btn" title="Add/edit position">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>
+            </button>
+            <span class="pb-pnl hidden" id="pb-pnl"></span>
+            <span class="pb-spacer"></span>
+            <button class="pb-refresh" id="pb-refresh" title="Refresh data">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+            <span class="pb-updated" id="pb-updated"></span>
+        </div>
+    </div>
+
+    <div class="app-layout">
+        <!-- Watchlist Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3 data-i18n="watchlist">Watchlist</h3>
+                <button class="btn-icon-sm" id="sidebar-toggle-btn" title="Toggle sidebar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+            </div>
+            <div class="sidebar-body">
+                <div class="watchlist-items" id="watchlist-items"></div>
+                <div class="watchlist-empty hidden" id="watchlist-empty">
+                    <p data-i18n="watchlistEmpty">Search for a stock and click + to add it here</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main>
+            <section class="search-section">
+                <div class="search-row">
+                    <div class="search-bar">
+                        <div class="search-input-wrap">
+                            <input type="text" id="ticker-input" placeholder="Enter Thai stock ticker (e.g. PTT, AOT, CPALL)" autocomplete="off" spellcheck="false">
+                            <div class="autocomplete-dropdown hidden" id="autocomplete-dropdown"></div>
+                        </div>
+                        <button id="search-btn" class="btn-primary" data-i18n="search">Search</button>
+                        <button id="watchlist-add" class="btn-watchlist-add hidden" title="Add to watchlist">+</button>
+                    </div>
+                </div>
+                <div class="period-buttons">
+                    <button class="btn-period" data-period="1mo">1M</button>
+                    <button class="btn-period" data-period="3mo">3M</button>
+                    <button class="btn-period active" data-period="6mo">6M</button>
+                    <button class="btn-period" data-period="1y">1Y</button>
+                    <button class="btn-period" data-period="2y">2Y</button>
+                    <button class="btn-period" data-period="5y">5Y</button>
+                </div>
+            </section>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <span data-i18n="loading">Fetching data...</span>
+            </div>
+            <div id="error-msg" class="error-msg hidden"></div>
+
+            <!-- Compare Mode Banner -->
+            <div id="compare-banner" class="compare-banner hidden">
+                <span data-i18n="compareMode">Compare Mode</span>
+                <div class="compare-inputs">
+                    <input type="text" id="compare-ticker-a" class="compare-input" placeholder="Stock A">
+                    <span class="compare-vs">vs</span>
+                    <input type="text" id="compare-ticker-b" class="compare-input" placeholder="Stock B">
+                    <button id="compare-go" class="btn-primary btn-sm" data-i18n="compareGo">Compare</button>
+                </div>
+                <button id="compare-close" class="compare-close">&times;</button>
+            </div>
+
+            <!-- Compare Results -->
+            <section id="compare-results" class="compare-results hidden"></section>
+
+            <!-- Portfolio View -->
+            <section id="portfolio-view" class="portfolio-view hidden">
+                <div class="portfolio-header-row">
+                    <h2>Portfolio</h2>
+                    <button class="btn-icon-sm" id="portfolio-close" title="Close portfolio">&times;</button>
+                </div>
+                <div id="portfolio-loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <span>Loading portfolio...</span>
+                </div>
+                <div id="portfolio-empty" class="portfolio-empty hidden">
+                    <p>No positions yet. Search for a stock and click the <strong>+</strong> button in the price bar to add one.</p>
+                </div>
+                <div id="portfolio-content"></div>
+            </section>
+
+            <!-- Single Stock Results -->
+            <section id="results" class="results hidden">
+                <div class="stock-header">
+                    <h2 id="stock-name"></h2>
+                    <span id="stock-ticker" class="ticker-badge"></span>
+                </div>
+
+                <div class="tab-bar">
+                    <button class="tab-btn active" data-tab="signals" data-i18n="tabSignals">Signals</button>
+                    <button class="tab-btn" data-tab="summary" data-i18n="tabSummary">Summary</button>
+                    <button class="tab-btn" data-tab="valuation" data-i18n="tabValuation">Valuation</button>
+                </div>
+
+                <!-- Signals Tab -->
+                <div class="tab-content active" id="tab-signals">
+                    <!-- Signal Gauge -->
+                    <div class="signal-gauge-card" id="signal-card">
+                        <div class="gauge-header">
+                            <div class="gauge-label-row">
+                                <span class="gauge-verdict" id="gauge-verdict"></span>
+                                <span class="gauge-score" id="gauge-score"></span>
+                            </div>
+                            <button class="signal-help-btn" id="signal-help-btn" title="What do these signals mean?">?</button>
+                        </div>
+                        <div class="gauge-bar-wrap">
+                            <div class="gauge-bar">
+                                <div class="gauge-fill" id="gauge-fill"></div>
+                                <div class="gauge-marker" id="gauge-marker"></div>
+                            </div>
+                            <div class="gauge-labels">
+                                <span class="gauge-end sell">Strong Sell</span>
+                                <span class="gauge-end hold">Neutral</span>
+                                <span class="gauge-end buy">Strong Buy</span>
+                            </div>
+                        </div>
+                        <!-- Indicator Status Cards -->
+                        <div class="ind-cards" id="ind-cards"></div>
+                    </div>
+
+                    <div class="indicator-toggles">
+                        <span class="toggle-label" data-i18n="indicators">Indicators:</span>
+                        <button class="btn-indicator active" data-indicator="sma" data-i18n="indSma">SMA Crossover</button>
+                        <button class="btn-indicator active" data-indicator="macd">MACD</button>
+                        <button class="btn-indicator active" data-indicator="stochastic" data-i18n="indStoch">Stochastic</button>
+                    </div>
+
+                    <div class="popover-overlay hidden" id="popover-overlay">
+                        <div class="popover" id="signal-popover">
+                            <div class="popover-header">
+                                <h3 data-i18n="popoverTitle">Understanding Signals</h3>
+                                <button class="popover-close" id="popover-close">&times;</button>
+                            </div>
+                            <div class="popover-body">
+                                <div class="popover-signal-example buy-example">
+                                    <div class="popover-signal-badge buy" data-i18n="signal_buy">BUY</div>
+                                    <p data-i18n="buyExample">At least 2 of 3 indicators are bullish.</p>
+                                </div>
+                                <div class="popover-signal-example hold-example">
+                                    <div class="popover-signal-badge hold" data-i18n="signal_hold">HOLD</div>
+                                    <p data-i18n="holdExample">Indicators are mixed.</p>
+                                </div>
+                                <div class="popover-signal-example sell-example">
+                                    <div class="popover-signal-badge sell" data-i18n="signal_sell">SELL</div>
+                                    <p data-i18n="sellExample">At least 2 of 3 indicators are bearish.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container" id="sma-chart-container">
+                        <div class="chart-header">
+                            <h3 data-i18n="priceChart">Price Chart</h3>
+                            <span class="chart-legend" id="price-chart-legend"></span>
+                        </div>
+                        <div id="price-chart" class="chart"></div>
+                    </div>
+                    <div class="chart-container" id="macd-chart-container">
+                        <div class="chart-header">
+                            <h3>MACD</h3>
+                            <span class="chart-legend" id="macd-chart-legend"></span>
+                        </div>
+                        <div id="macd-chart" class="chart chart-small"></div>
+                    </div>
+                    <div class="chart-container" id="stochastic-chart-container">
+                        <div class="chart-header">
+                            <h3 data-i18n="stochastic">Stochastic</h3>
+                            <span class="chart-legend" id="stoch-chart-legend"></span>
+                        </div>
+                        <div id="stoch-chart" class="chart chart-small"></div>
+                    </div>
+                </div>
+
+                <!-- Summary Tab -->
+                <div class="tab-content" id="tab-summary">
+                    <div id="summary-loading" class="loading hidden">
+                        <div class="spinner"></div>
+                        <span data-i18n="loading">Fetching data...</span>
+                    </div>
+                    <div class="summary-layout">
+                        <div class="summary-main" id="summary-content"></div>
+                        <div class="summary-side">
+                            <div class="radar-card" id="radar-card">
+                                <h4 data-i18n="healthScore">Health Score</h4>
+                                <canvas id="radar-chart" width="240" height="240"></canvas>
+                                <div class="radar-legend" id="radar-legend"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Valuation Tab -->
+                <div class="tab-content" id="tab-valuation">
+                    <div id="valuation-loading" class="loading hidden">
+                        <div class="spinner"></div>
+                        <span data-i18n="loading">Fetching data...</span>
+                    </div>
+                    <div id="valuation-content"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <p data-i18n="disclaimer">This tool is for educational purposes only. Not financial advice.</p>
+    </footer>
+
+    <!-- Position Form -->
+    <div class="pos-overlay hidden" id="pos-overlay">
+        <div class="pos-form">
+            <div class="pos-form-header">
+                <h4 id="pos-form-title">Add Position</h4>
+                <button class="popover-close" id="pos-close">&times;</button>
+            </div>
+            <div class="pos-form-body">
+                <div class="pos-form-ticker" id="pos-form-ticker"></div>
+                <div class="pos-form-row">
+                    <label>Shares</label>
+                    <input type="number" id="pos-shares" min="0" step="1" placeholder="0">
+                </div>
+                <div class="pos-form-row">
+                    <label>Avg Cost</label>
+                    <input type="number" id="pos-avg-cost" min="0" step="0.01" placeholder="0.00">
+                </div>
+                <div class="pos-form-actions">
+                    <button class="btn-reset" id="pos-remove">Remove Position</button>
+                    <button class="btn-primary btn-sm" id="pos-save">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-overlay hidden" id="settings-overlay">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h3 data-i18n="settingsTitle">Settings</h3>
+                <button class="popover-close" id="settings-close">&times;</button>
+            </div>
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-stab="general">General</button>
+                <button class="settings-tab" data-stab="indicators">Indicators</button>
+            </div>
+            <div class="settings-body">
+                <!-- General Tab -->
+                <div class="settings-tab-content active" id="stab-general">
+                    <div class="settings-section">
+                        <h4 data-i18n="sensitivityTitle">Signal Sensitivity</h4>
+                        <p class="settings-hint" data-i18n="sensitivityHint">How many indicators must agree for a Buy or Sell signal</p>
+                        <div class="sensitivity-options">
+                            <button class="btn-sensitivity" data-sensitivity="conservative" data-i18n="conservative">Conservative</button>
+                            <button class="btn-sensitivity active" data-sensitivity="normal" data-i18n="normal">Normal</button>
+                            <button class="btn-sensitivity" data-sensitivity="aggressive" data-i18n="aggressive">Aggressive</button>
+                        </div>
+                        <p class="sensitivity-desc" id="sensitivity-desc" data-i18n="normalDesc">Majority of active indicators must agree</p>
+                    </div>
+                </div>
+                <!-- Indicators Tab -->
+                <div class="settings-tab-content" id="stab-indicators">
+                    <details class="settings-indicator-group" open>
+                        <summary>
+                            <span class="sig-icon">📈</span> SMA Crossover
+                            <span class="sig-summary" id="sma-summary">20 / 50</span>
+                        </summary>
+                        <div class="sig-body">
+                            <div class="settings-row"><label data-i18n="shortSma">Short SMA</label><select id="sma-short"><option value="5">5</option><option value="10">10</option><option value="20" selected>20</option><option value="50">50</option></select></div>
+                            <div class="settings-row"><label data-i18n="longSma">Long SMA</label><select id="sma-long"><option value="20">20</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option></select></div>
+                        </div>
+                    </details>
+                    <details class="settings-indicator-group">
+                        <summary>
+                            <span class="sig-icon">📊</span> MACD
+                            <span class="sig-summary" id="macd-summary">12 / 26 / 9</span>
+                        </summary>
+                        <div class="sig-body">
+                            <div class="settings-row"><label data-i18n="macdFast">Fast Period</label><select id="macd-fast"><option value="8">8</option><option value="12" selected>12</option><option value="16">16</option></select></div>
+                            <div class="settings-row"><label data-i18n="macdSlow">Slow Period</label><select id="macd-slow"><option value="20">20</option><option value="26" selected>26</option><option value="30">30</option></select></div>
+                            <div class="settings-row"><label data-i18n="macdSignal">Signal Period</label><select id="macd-signal"><option value="5">5</option><option value="9" selected>9</option><option value="12">12</option></select></div>
+                        </div>
+                    </details>
+                    <details class="settings-indicator-group">
+                        <summary>
+                            <span class="sig-icon">🔀</span> Stochastic
+                            <span class="sig-summary" id="stoch-summary">14 / 3 · 80/20</span>
+                        </summary>
+                        <div class="sig-body">
+                            <div class="settings-row"><label data-i18n="stochPeriod">%K Period</label><select id="stoch-k"><option value="5">5</option><option value="9">9</option><option value="14" selected>14</option><option value="21">21</option></select></div>
+                            <div class="settings-row"><label data-i18n="stochSmooth">Smooth</label><select id="stoch-smooth"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option></select></div>
+                            <div class="settings-row"><label data-i18n="overbought">Overbought</label><input type="number" id="stoch-ob" value="80" min="50" max="95" step="5"></div>
+                            <div class="settings-row"><label data-i18n="oversold">Oversold</label><input type="number" id="stoch-os" value="20" min="5" max="50" step="5"></div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+            <div class="settings-footer">
+                <button class="btn-reset" id="settings-reset" data-i18n="resetDefaults">Reset to Defaults</button>
+                <button class="btn-primary" id="settings-apply" data-i18n="apply">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
