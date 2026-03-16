@@ -7,7 +7,6 @@ from services.fundamentals import fetch_fundamentals
 from services.valuation import fetch_dcf
 from services.backtest import run_backtest
 from services.set_tickers import search_set
-from services.scanner import scan_market, scan_defaults, compute_signal_accuracy, compute_market_accuracy
 from concurrent.futures import ThreadPoolExecutor
 
 import yfinance as yf
@@ -219,49 +218,6 @@ def get_portfolio():
     except Exception as e:
         app.logger.error(f"Error in /api/portfolio: {e}")
         return jsonify({"error": "Failed to fetch portfolio data."}), 503
-
-
-@app.route("/api/scan")
-def api_scan():
-    try:
-        market = request.args.get("market", "set")
-        tickers_param = request.args.get("tickers", "")
-        if tickers_param:
-            tickers = [t.strip() for t in tickers_param.split(",") if t.strip()]
-            data = scan_market(tickers, market)
-        else:
-            data = scan_defaults(market)
-        return jsonify(data)
-    except Exception as e:
-        app.logger.error(f"Error in /api/scan: {e}")
-        return jsonify([]), 503
-
-
-@app.route("/api/accuracy")
-def api_accuracy():
-    try:
-        market = request.args.get("market", "set")
-        horizon = int(request.args.get("horizon", 5))
-        data = compute_market_accuracy(market, horizon)
-        return jsonify(data)
-    except Exception as e:
-        app.logger.error(f"Error in /api/accuracy: {e}")
-        return jsonify({"error": "Failed to compute accuracy."}), 503
-
-
-@app.route("/api/accuracy/<ticker>")
-def api_accuracy_ticker(ticker):
-    try:
-        market = request.args.get("market", "set")
-        horizon = int(request.args.get("horizon", 5))
-        symbol = normalize_ticker(ticker, market)
-        data = compute_signal_accuracy(symbol, 90, horizon)
-        if not data:
-            return jsonify({"error": "Could not compute accuracy"}), 404
-        return jsonify(data)
-    except Exception as e:
-        app.logger.error(f"Error in /api/accuracy/{ticker}: {e}")
-        return jsonify({"error": "Failed to compute accuracy."}), 503
 
 
 @app.route("/api/backtest/<ticker>")
