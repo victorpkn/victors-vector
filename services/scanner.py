@@ -1,4 +1,5 @@
 import time
+import logging
 import yfinance as yf
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -6,27 +7,41 @@ from ta.trend import SMAIndicator, MACD
 from ta.momentum import StochasticOscillator
 from services.stock_data import normalize_ticker
 
+logger = logging.getLogger(__name__)
+
 _cache = {}
-CACHE_TTL = 900  # 15 minutes
+CACHE_TTL = 1800  # 30 minutes
 
 DEFAULT_SCAN_SET = [
-    "PTT", "AOT", "CPALL", "KBANK", "SCB", "ADVANC", "GULF", "BDMS",
-    "DELTA", "SCC", "BBL", "CPN", "MINT", "BH", "HMPRO", "IVL",
-    "OR", "BEM", "BTS", "SAWAD", "EA", "BGRIM", "KCE", "COM7",
+    "PTT", "AOT", "CPALL", "KBANK", "ADVANC", "GULF", "BDMS",
+    "DELTA", "SCC", "BBL", "CPN", "MINT", "BH", "IVL",
 ]
 
 DEFAULT_SCAN_US = [
     "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM",
-    "V", "UNH", "MA", "HD", "PG", "JNJ", "NFLX", "DIS",
-    "COST", "AMD", "CRM", "PYPL", "INTC", "BA", "NKE", "SBUX",
+    "V", "UNH", "HD", "PG", "NFLX", "DIS",
 ]
+
+
+def _yf_retry(fn, retries=2, delay=3):
+    """Call fn with retry on rate limit errors."""
+    for attempt in range(retries + 1):
+        try:
+            return fn()
+        except Exception as e:
+            if "Rate" in str(e) or "429" in str(e) or "Too Many" in str(e):
+                if attempt < retries:
+                    logger.warning(f"Rate limited, retrying in {delay}s (attempt {attempt + 1})")
+                    time.sleep(delay * (attempt + 1))
+                    continue
+            raise
 
 
 def _compute_signal_fast(symbol: str) -> dict | None:
     """Compute signals for a single ticker. Returns None on failure."""
     try:
         stock = yf.Ticker(symbol)
-        df = stock.history(period="3mo", interval="1d")
+        df = _yf_retry(lambda: stock.history(period="3mo", interval="1d"))
         if df.empty or len(df) < 30:
             return None
 
@@ -119,7 +134,7 @@ def scan_market(tickers: list, market: str = "set") -> list:
     symbols = [normalize_ticker(t, market) for t in tickers]
 
     results = []
-    with ThreadPoolExecutor(max_workers=10) as pool:
+    with ThreadPoolExecutor(max_workers=4) as pool:
         futures = {pool.submit(_compute_signal_fast, sym): sym for sym in symbols}
         for future in as_completed(futures):
             r = future.result()
@@ -141,7 +156,7 @@ def compute_signal_accuracy(symbol: str, lookback_days: int = 90,
     """Check historical signal accuracy: did price move in the predicted direction?"""
     try:
         stock = yf.Ticker(symbol)
-        df = stock.history(period="1y", interval="1d")
+        df = _yf_retry(lambda: stock.history(period="1y", interval="1d"))
         if df.empty or len(df) < 60:
             return None
 
@@ -257,7 +272,7 @@ def compute_market_accuracy(market: str = "set", horizon: int = 5) -> dict:
     symbols = [normalize_ticker(t, market) for t in tickers]
 
     results = []
-    with ThreadPoolExecutor(max_workers=8) as pool:
+    with ThreadPoolExecutor(max_workers=4) as pool:
         futures = {pool.submit(compute_signal_accuracy, sym, 90, horizon): sym for sym in symbols}
         for future in as_completed(futures):
             r = future.result()
