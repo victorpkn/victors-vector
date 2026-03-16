@@ -1166,6 +1166,31 @@ main { flex: 1; min-width: 0; padding: 24px 32px; overflow-y: auto; }
     .opp-grid { grid-template-columns: 1fr; }
 }
 
+/* ── Market Overview Panel ── */
+.market-view {
+    padding: 20px 24px 40px; max-width: 960px; margin: 0 auto;
+}
+.mv-header-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+}
+.mv-header-row h2 { font-size: 1.4rem; font-weight: 700; }
+.mv-controls { display: flex; align-items: center; gap: 12px; }
+.mv-mkt-btn {
+    padding: 4px 12px; border-radius: 14px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-secondary); font-size: 0.75rem;
+    font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.2s;
+}
+.mv-mkt-btn.active { background: rgba(88,166,255,0.12); border-color: var(--accent); color: var(--accent); }
+.mv-section {
+    background: rgba(22, 27, 34, 0.5); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px;
+}
+.mv-section-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+}
+.mv-section-header h3 { font-size: 1rem; font-weight: 700; }
+.mv-sub { font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 14px; }
+
 /* ── Sector Heatmap ── */
 .heatmap-section {
     position: relative; z-index: 1; width: 100%; max-width: 880px;
@@ -1186,6 +1211,44 @@ main { flex: 1; min-width: 0; padding: 24px 32px; overflow-y: auto; }
 .hm-sector { font-size: 0.7rem; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; line-height: 1.2; }
 .hm-score { font-size: 0.6rem; font-weight: 600; color: rgba(255,255,255,0.85); margin-top: 2px; }
 .hm-count { font-size: 0.55rem; color: rgba(255,255,255,0.6); }
+
+/* Heatmap Drill-down */
+.hm-drill-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+}
+.hm-back-btn {
+    background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-secondary);
+    padding: 5px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: all 0.2s;
+}
+.hm-back-btn:hover { color: var(--accent); border-color: var(--accent); }
+.hm-drill-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+.hm-drill-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;
+}
+.hm-stock-card {
+    background: rgba(22, 27, 34, 0.7); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px; cursor: pointer; transition: all 0.2s; position: relative;
+}
+.hm-stock-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.hm-stock-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.hm-stock-ticker { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
+.hm-stock-name { font-size: 0.62rem; color: var(--text-secondary); display: block; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hm-stock-signal {
+    font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 8px;
+    text-transform: uppercase; letter-spacing: 0.03em;
+}
+.hm-stock-signal.buy { background: rgba(63,185,80,0.15); color: var(--green); }
+.hm-stock-signal.sell { background: rgba(248,81,73,0.15); color: var(--red); }
+.hm-stock-signal.hold { background: rgba(255,208,0,0.12); color: var(--yellow); }
+.hm-stock-bottom { display: flex; justify-content: space-between; align-items: baseline; }
+.hm-stock-price { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+.hm-stock-change { font-size: 0.7rem; font-weight: 600; }
+.hm-stock-change.up { color: var(--green); }
+.hm-stock-change.down { color: var(--red); }
+.hm-stock-pills { display: flex; gap: 3px; margin-top: 5px; }
+.hm-stock-sparkline { height: 24px; margin: 4px 0; }
+.hm-stock-sparkline svg { width: 100%; height: 100%; }
 
 /* ── Signal Accuracy ── */
 .accuracy-section {

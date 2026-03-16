@@ -1357,6 +1357,7 @@
         if (!portfolioOpen) return;
         hideWelcome();
         $("#results").classList.add("hidden");
+        if (marketViewOpen) closeMarketView();
         if (compareMode) { toggleCompare(); }
         fetchPortfolio();
     }
@@ -1365,6 +1366,32 @@
         portfolioOpen = false;
         $("#portfolio-btn").classList.remove("active");
         $("#portfolio-view").classList.add("hidden");
+    }
+
+    // ── Market Overview ──
+    let marketViewOpen = false;
+    let mvDataLoaded = false;
+
+    function toggleMarketView() {
+        marketViewOpen = !marketViewOpen;
+        $("#market-btn").classList.toggle("active", marketViewOpen);
+        $("#market-view").classList.toggle("hidden", !marketViewOpen);
+        if (!marketViewOpen) return;
+        hideWelcome();
+        $("#results").classList.add("hidden");
+        if (portfolioOpen) closePortfolio();
+        if (compareMode) toggleCompare();
+        if (!mvDataLoaded) {
+            mvDataLoaded = true;
+            fetchOpportunities(oppMarket);
+            fetchAccuracy(oppMarket, accHorizon);
+        }
+    }
+
+    function closeMarketView() {
+        marketViewOpen = false;
+        $("#market-btn").classList.remove("active");
+        $("#market-view").classList.add("hidden");
     }
 
     async function fetchPortfolio() {
@@ -1642,6 +1669,7 @@
         currentTicker = ticker;
         if (compareMode) return;
         if (portfolioOpen) closePortfolio();
+        if (marketViewOpen) closeMarketView();
         hideWelcome();
         $("#loading").classList.remove("hidden");
         $("#error-msg").classList.add("hidden");
@@ -1843,6 +1871,7 @@
         $("#results").classList.add("hidden");
         $("#price-bar").classList.add("hidden");
         if (portfolioOpen) closePortfolio();
+        if (marketViewOpen) closeMarketView();
         if (compareMode) toggleCompare();
         initBurstCanvas();
     }
@@ -2045,9 +2074,15 @@
     }
 
     // ── Sector Heatmap ──
+    let hmSectors = [];
+
     function renderHeatmap(scanData) {
         const container = $("#hm-treemap");
+        const drill = $("#hm-drill");
         if (!container || !scanData.length) return;
+
+        drill.classList.add("hidden");
+        container.classList.remove("hidden");
 
         const sectors = {};
         scanData.forEach(s => {
@@ -2057,17 +2092,17 @@
             sectors[sec].totalScore += s.score;
         });
 
-        const entries = Object.entries(sectors).map(([name, data]) => ({
+        hmSectors = Object.entries(sectors).map(([name, data]) => ({
             name,
             count: data.stocks.length,
             avgScore: data.totalScore / data.stocks.length,
             stocks: data.stocks,
         }));
-        entries.sort((a, b) => b.count - a.count);
+        hmSectors.sort((a, b) => b.count - a.count);
 
-        const totalStocks = entries.reduce((s, e) => s + e.count, 0);
+        const totalStocks = hmSectors.reduce((s, e) => s + e.count, 0);
 
-        container.innerHTML = entries.map(sec => {
+        container.innerHTML = hmSectors.map((sec, idx) => {
             const pct = (sec.count / totalStocks) * 100;
             const width = Math.max(pct, 8);
             const r = sec.avgScore;
@@ -2078,14 +2113,63 @@
             else if (r > -1.5) bg = "rgba(248,81,73,0.3)";
             else bg = "rgba(248,81,73,0.6)";
 
-            const tickers = sec.stocks.map(s => s.symbol.replace(".BK", "")).join(", ");
-            return `<div class="hm-cell" style="flex-basis:calc(${width}% - 3px);flex-grow:1;background:${bg}"
-                         title="${sec.name}: ${tickers}">
+            return `<div class="hm-cell" data-sector="${idx}" style="flex-basis:calc(${width}% - 3px);flex-grow:1;background:${bg}">
                 <span class="hm-sector">${sec.name}</span>
                 <span class="hm-score">${r >= 0 ? "+" : ""}${r.toFixed(1)} avg</span>
                 <span class="hm-count">${sec.count} stock${sec.count > 1 ? "s" : ""}</span>
             </div>`;
         }).join("");
+
+        container.querySelectorAll(".hm-cell").forEach(cell => {
+            cell.addEventListener("click", () => {
+                const idx = parseInt(cell.dataset.sector);
+                drillIntoSector(hmSectors[idx]);
+            });
+        });
+    }
+
+    function drillIntoSector(sector) {
+        const container = $("#hm-treemap");
+        const drill = $("#hm-drill");
+        const title = $("#hm-drill-title");
+        const grid = $("#hm-drill-grid");
+
+        container.classList.add("hidden");
+        drill.classList.remove("hidden");
+        title.textContent = `${sector.name} — ${sector.count} stock${sector.count > 1 ? "s" : ""}`;
+
+        grid.innerHTML = sector.stocks.map(stock => {
+            const cleanSym = stock.symbol.replace(".BK", "");
+            const chgClass = stock.dayChange >= 0 ? "up" : "down";
+            const chgSign = stock.dayChange >= 0 ? "+" : "";
+            const sigClass = stock.action.toLowerCase();
+            const sparkSvg = miniSparkSvg(stock.sparkline, 140, 24, stock.dayChange >= 0 ? "#3fb950" : "#f85149");
+            const pills = stock.signals.map(s =>
+                `<span class="opp-pill ${s.sig.toLowerCase()}">${s.ind}</span>`
+            ).join("");
+            return `<div class="hm-stock-card" data-ticker="${cleanSym}" data-market="${oppMarket}">
+                <div class="hm-stock-top">
+                    <div>
+                        <span class="hm-stock-ticker">${cleanSym}</span>
+                        <span class="hm-stock-name">${stock.name}</span>
+                    </div>
+                    <span class="hm-stock-signal ${sigClass}">${stock.action}</span>
+                </div>
+                <div class="hm-stock-sparkline">${sparkSvg}</div>
+                <div class="hm-stock-bottom">
+                    <span class="hm-stock-price">${stock.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span class="hm-stock-change ${chgClass}">${chgSign}${stock.dayChange}%</span>
+                </div>
+                <div class="hm-stock-pills">${pills}</div>
+            </div>`;
+        }).join("");
+
+        grid.querySelectorAll(".hm-stock-card").forEach(card => {
+            card.addEventListener("click", () => {
+                closeMarketView();
+                welcomeSearch(card.dataset.ticker, card.dataset.market);
+            });
+        });
     }
 
     // ── Signal Accuracy ──
@@ -2200,11 +2284,10 @@
                 const action = card.dataset.action;
                 if (action === "portfolio") {
                     hideWelcome(); togglePortfolio();
+                } else if (action === "market") {
+                    hideWelcome(); toggleMarketView();
                 } else if (action === "compare") {
                     hideWelcome(); toggleCompare();
-                } else if (action === "search") {
-                    hideWelcome();
-                    setTimeout(() => $("#ticker-input").focus(), 100);
                 } else {
                     hideWelcome();
                     if (!currentTicker) {
@@ -2230,15 +2313,23 @@
             });
         }, 400);
 
-        // Opportunities scanner + heatmap + accuracy
-        fetchOpportunities(oppMarket);
-        fetchAccuracy(oppMarket, accHorizon);
-        $$(".opp-mkt-btn").forEach(btn => {
+        // Market Overview panel
+        $("#market-btn").addEventListener("click", toggleMarketView);
+        $("#market-close").addEventListener("click", closeMarketView);
+        $("#hm-back").addEventListener("click", () => {
+            $("#hm-treemap").classList.remove("hidden");
+            $("#hm-drill").classList.add("hidden");
+        });
+        $$(".mv-mkt-btn").forEach(btn => {
             btn.addEventListener("click", () => {
                 oppMarket = btn.dataset.market;
-                $$(".opp-mkt-btn").forEach(b => b.classList.toggle("active", b.dataset.market === oppMarket));
+                $$(".mv-mkt-btn").forEach(b => b.classList.toggle("active", b.dataset.market === oppMarket));
+                mvDataLoaded = false;
+                oppCache = {};
+                accCache = {};
                 fetchOpportunities(oppMarket);
                 fetchAccuracy(oppMarket, accHorizon);
+                mvDataLoaded = true;
             });
         });
         $$(".acc-hz-btn").forEach(btn => {
