@@ -1,4 +1,5 @@
 import logging
+import traceback
 from flask import Flask, render_template, jsonify, request
 from services.stock_data import fetch_stock_data, normalize_ticker
 from services.technical import compute_indicators
@@ -19,6 +20,25 @@ logging.basicConfig(level=logging.INFO)
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/api/health")
+def health_check():
+    """Diagnostic endpoint to test yfinance on this server."""
+    results = {"yfinance_version": yf.__version__, "session_type": type(Ticker("X").session).__name__}
+    try:
+        stock = Ticker("AAPL")
+        df = stock.history(period="5d", interval="1d")
+        results["history"] = {"rows": len(df), "ok": not df.empty}
+    except Exception as e:
+        results["history"] = {"error": str(e), "type": type(e).__name__}
+    try:
+        stock = Ticker("AAPL")
+        info = stock.info
+        results["info"] = {"keys": len(info), "name": info.get("shortName", "?")}
+    except Exception as e:
+        results["info"] = {"error": str(e), "type": type(e).__name__}
+    return jsonify(results)
 
 
 @app.route("/api/stock/<ticker>")
@@ -51,7 +71,7 @@ def get_stock(ticker):
         data["signal"] = signal
         return jsonify(data)
     except Exception as e:
-        app.logger.error(f"Error in /api/stock/{ticker}: {e}")
+        app.logger.error(f"Error in /api/stock/{ticker}: {traceback.format_exc()}")
         return jsonify({"error": "Failed to fetch stock data. Please try again."}), 503
 
 
@@ -64,7 +84,7 @@ def get_summary(ticker):
             return jsonify(data), 404
         return jsonify(data)
     except Exception as e:
-        app.logger.error(f"Error in /api/summary/{ticker}: {e}")
+        app.logger.error(f"Error in /api/summary/{ticker}: {traceback.format_exc()}")
         return jsonify({"error": "Failed to fetch summary data."}), 503
 
 

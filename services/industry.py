@@ -47,9 +47,8 @@ def fetch_industry_medians(industry_key: str, exclude_symbol: str = "") -> dict:
         return cached["data"]
 
     try:
-        from curl_cffi import requests as cffi_requests
-        session = cffi_requests.Session(impersonate="chrome")
-        ind = yf.Industry(industry_key, session=session)
+        from services.yf_session import get_session
+        ind = yf.Industry(industry_key, session=get_session())
         top = ind.top_companies
         if top is None or top.empty:
             return {}
