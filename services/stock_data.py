@@ -37,8 +37,11 @@ def fetch_stock_data(ticker: str, period: str = "6mo", market: str = "set") -> d
 
     df = df.set_index("date", drop=False)
 
-    info = stock.info
-    name = info.get("longName") or info.get("shortName") or symbol
+    try:
+        info = yf_fetch_with_retry(lambda: stock.info)
+        name = info.get("longName") or info.get("shortName") or symbol if info else symbol
+    except Exception:
+        name = symbol
 
     candles = []
     for _, row in df.iterrows():

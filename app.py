@@ -35,7 +35,10 @@ def health_check():
     try:
         stock = Ticker("AAPL")
         info = yf_fetch_with_retry(lambda: stock.info)
-        results["info"] = {"keys": len(info), "name": info.get("shortName", "?")}
+        if info:
+            results["info"] = {"keys": len(info), "name": info.get("shortName", "?")}
+        else:
+            results["info"] = {"error": "info returned None", "type": "NoneType"}
     except Exception as e:
         results["info"] = {"error": str(e), "type": type(e).__name__}
     return jsonify(results)
