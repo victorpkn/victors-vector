@@ -9,7 +9,8 @@ try:
     from curl_cffi import requests as cffi_requests
     _session = cffi_requests.Session(impersonate="chrome")
     logger.info("yf_session: using curl_cffi (chrome impersonation)")
-except Exception:
+except Exception as exc:
+    logger.warning(f"yf_session: curl_cffi failed ({type(exc).__name__}: {exc}), falling back to requests")
     import requests as _req
     _session = _req.Session()
     _session.headers.update({
@@ -19,7 +20,6 @@ except Exception:
             "Chrome/131.0.0.0 Safari/537.36"
         )
     })
-    logger.warning("yf_session: curl_cffi unavailable, falling back to requests")
 
 
 def Ticker(symbol: str) -> yf.Ticker:

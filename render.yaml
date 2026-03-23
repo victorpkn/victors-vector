@@ -1,9 +1,4 @@
 services:
   - type: web
     name: victors-vector
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.11"
+    runtime: docker
