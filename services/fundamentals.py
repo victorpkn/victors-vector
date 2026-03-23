@@ -1,4 +1,4 @@
-from services.yf_session import Ticker
+from services.yf_session import Ticker, yf_fetch_with_retry
 from services.industry import fetch_industry_medians
 
 
@@ -211,7 +211,10 @@ def fetch_fundamentals(ticker: str, market: str = "set") -> dict:
         symbol += ".BK"
 
     stock = Ticker(symbol)
-    info = stock.info
+    try:
+        info = yf_fetch_with_retry(lambda: stock.info)
+    except Exception:
+        info = None
 
     if not info or info.get("quoteType") is None:
         return {"error": f"No data found for {symbol}"}

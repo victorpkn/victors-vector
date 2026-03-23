@@ -1,5 +1,5 @@
 import math
-from services.yf_session import Ticker
+from services.yf_session import Ticker, yf_fetch_with_retry
 
 
 def fetch_dcf(ticker: str, market: str = "set", overrides: dict = None) -> dict:
@@ -11,11 +11,17 @@ def fetch_dcf(ticker: str, market: str = "set", overrides: dict = None) -> dict:
         symbol += ".BK"
 
     stock = Ticker(symbol)
-    info = stock.info
+    try:
+        info = yf_fetch_with_retry(lambda: stock.info)
+    except Exception:
+        info = None
     if not info or info.get("quoteType") is None:
         return {"error": f"No data found for {symbol}"}
 
-    cf = stock.cashflow
+    try:
+        cf = yf_fetch_with_retry(lambda: stock.cashflow)
+    except Exception:
+        cf = None
     if cf is None or cf.empty or "Free Cash Flow" not in cf.index:
         return {"error": f"No cash flow data available for {symbol}"}
 

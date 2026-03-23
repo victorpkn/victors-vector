@@ -118,7 +118,7 @@ def get_sparkline(ticker):
         market = request.args.get("market", "set")
         symbol = normalize_ticker(ticker, market)
         stock = Ticker(symbol)
-        df = stock.history(period="1mo", interval="1d")
+        df = yf_fetch_with_retry(lambda: stock.history(period="1mo", interval="1d"))
         if df.empty:
             return jsonify({"error": "No data"}), 404
         closes = df["Close"].dropna().tolist()
@@ -179,7 +179,9 @@ def get_portfolio():
             symbol = normalize_ticker(ticker, market)
             try:
                 stock = Ticker(symbol)
-                info = stock.info
+                info = yf_fetch_with_retry(lambda: stock.info)
+                if not info:
+                    return None
                 price = info.get("currentPrice") or info.get("regularMarketPrice") or 0
                 prev_close = info.get("previousClose") or price
                 day_change = ((price - prev_close) / prev_close * 100) if prev_close else 0

@@ -92,9 +92,12 @@ def _compute_signal_fast(symbol: str) -> dict | None:
         prev = closes[-2] if len(closes) >= 2 else closes[-1]
         day_chg = round((price - prev) / prev * 100, 2) if prev else 0
 
-        info = stock.info
-        name = info.get("longName") or info.get("shortName") or symbol
-        sector = info.get("sector") or "Other"
+        try:
+            info = yf_fetch_with_retry(lambda: stock.info)
+        except Exception:
+            info = None
+        name = (info.get("longName") or info.get("shortName") or symbol) if info else symbol
+        sector = (info.get("sector") or "Other") if info else "Other"
 
         return {
             "symbol": symbol,
