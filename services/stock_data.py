@@ -1,6 +1,6 @@
 import logging
 import pandas as pd
-from services.yf_session import Ticker, yf_fetch_with_retry
+from services.yf_session import Ticker, yf_fetch_with_retry, get_cached_info
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ def fetch_stock_data(ticker: str, period: str = "6mo", market: str = "set") -> d
     df = df.set_index("date", drop=False)
 
     try:
-        info = yf_fetch_with_retry(lambda: stock.info)
+        info = get_cached_info(symbol)
         name = info.get("longName") or info.get("shortName") or symbol if info else symbol
     except Exception as e:
         logger.warning(f"fetch_stock_data({symbol}): info lookup failed: {e}")

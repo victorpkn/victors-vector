@@ -8,7 +8,7 @@ _session_info = {"type": "default", "error": None}
 
 _info_cache = {}
 INFO_CACHE_TTL = 1800  # 30 minutes
-NEGATIVE_CACHE_TTL = 120  # 2 minutes for failed lookups
+NEGATIVE_CACHE_TTL = 30  # 30 seconds — short so frontend retries get a fresh attempt
 
 TRANSIENT_KEYWORDS = (
     "Rate", "429", "Too Many", "RateLimit",

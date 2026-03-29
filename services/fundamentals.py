@@ -216,11 +216,8 @@ def fetch_fundamentals(ticker: str, market: str = "set") -> dict:
     info = get_cached_info(symbol)
 
     if not info:
-        logger.warning(f"fetch_fundamentals: get_cached_info returned None for {symbol}")
+        logger.warning(f"fetch_fundamentals: no data for {symbol}")
         invalidate_cache(symbol)
-        info = get_cached_info(symbol)
-
-    if not info:
         return {"error": f"No data found for {symbol}", "retryable": True}
 
     has_price = info.get("currentPrice") or info.get("regularMarketPrice")

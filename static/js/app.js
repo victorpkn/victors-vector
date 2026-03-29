@@ -1720,6 +1720,10 @@
                 fetch(`/api/summary/${encodeURIComponent(ticker)}?market=${currentMarket}`)
                     .then(r => r.ok ? r.json() : null).then(d => { if (d && !d.error) summaryCache[sKey] = d; }).catch(() => {});
             }
+            if (!valuationCache[sKey]) {
+                fetch(`/api/valuation/${encodeURIComponent(ticker)}?market=${currentMarket}`)
+                    .then(r => r.ok ? r.json() : null).then(d => { if (d && !d.error) valuationCache[sKey] = d; }).catch(() => {});
+            }
         } catch (err) {
             if (err.name === "AbortError") return;
             if (mySeq !== searchSeq) return;

@@ -16,8 +16,6 @@ def fetch_dcf(ticker: str, market: str = "set", overrides: dict = None) -> dict:
     info = get_cached_info(symbol)
     if not info:
         invalidate_cache(symbol)
-        info = get_cached_info(symbol)
-    if not info:
         return {"error": f"No data found for {symbol}", "retryable": True}
 
     has_price = info.get("currentPrice") or info.get("regularMarketPrice")
