@@ -13,6 +13,8 @@
     let watchlist = [];
     let compareMode = false;
     let positions = {};
+    let searchSeq = 0;
+    let searchAbort = null;
 
     let priceChart, macdChart, stochChart;
     let priceCandleSeries = null;
@@ -851,7 +853,8 @@
         $("#summary-loading").classList.remove("hidden");
         if (retryCount === 0) $("#summary-content").innerHTML = "";
         try {
-            const res = await fetch(`/api/summary/${encodeURIComponent(currentTicker)}?market=${currentMarket}`);
+            const res = await fetch(`/api/summary/${encodeURIComponent(ticker)}?market=${currentMarket}`);
+            if (currentTicker !== ticker) return;
             if (!res.ok) {
                 const d = await res.json().catch(() => ({}));
                 const err = new Error(d.error || "Failed to load summary");
@@ -859,19 +862,22 @@
                 throw err;
             }
             const data = await res.json();
+            if (currentTicker !== ticker) return;
             summaryCache[key] = data;
             renderSummary(data);
         } catch (err) {
-            if (err.retryable && retryCount < MAX_RETRIES && currentTicker === ticker) {
+            if (currentTicker !== ticker) return;
+            if (err.retryable && retryCount < MAX_RETRIES) {
                 await new Promise(r => setTimeout(r, RETRY_DELAYS[retryCount] || 2000));
                 if (currentTicker === ticker) return fetchSummary(retryCount + 1);
+                return;
             }
             const retryBtn = err.retryable
                 ? ` <button class="retry-btn" onclick="document.dispatchEvent(new CustomEvent('retry-summary'))">Retry</button>`
                 : "";
             $("#summary-content").innerHTML = `<div class="error-msg">${err.message}${retryBtn}</div>`;
         } finally {
-            $("#summary-loading").classList.add("hidden");
+            if (currentTicker === ticker) $("#summary-loading").classList.add("hidden");
         }
     }
     document.addEventListener("retry-summary", () => { summaryCache = {}; fetchSummary(); });
@@ -1009,7 +1015,8 @@
             if (overrides) {
                 for (const [k, v] of Object.entries(overrides)) qs += `&${k}=${v}`;
             }
-            const res = await fetch(`/api/valuation/${encodeURIComponent(currentTicker)}?${qs}`);
+            const res = await fetch(`/api/valuation/${encodeURIComponent(ticker)}?${qs}`);
+            if (currentTicker !== ticker) return;
             if (!res.ok) {
                 const d = await res.json().catch(() => ({}));
                 const err = new Error(d.error || "Failed to load valuation");
@@ -1017,19 +1024,22 @@
                 throw err;
             }
             const data = await res.json();
+            if (currentTicker !== ticker) return;
             if (!overrides) valuationCache[key] = data;
             renderValuation(data);
         } catch (err) {
-            if (err.retryable && retryCount < MAX_RETRIES && currentTicker === ticker) {
+            if (currentTicker !== ticker) return;
+            if (err.retryable && retryCount < MAX_RETRIES) {
                 await new Promise(r => setTimeout(r, RETRY_DELAYS[retryCount] || 2000));
                 if (currentTicker === ticker) return fetchValuation(overrides, retryCount + 1);
+                return;
             }
             const retryBtn = err.retryable
                 ? ` <button class="retry-btn" onclick="document.dispatchEvent(new CustomEvent('retry-valuation'))">Retry</button>`
                 : "";
             $("#valuation-content").innerHTML = `<div class="error-msg">${err.message}${retryBtn}</div>`;
         } finally {
-            $("#valuation-loading").classList.add("hidden");
+            if (currentTicker === ticker) $("#valuation-loading").classList.add("hidden");
         }
     }
     document.addEventListener("retry-valuation", () => { valuationCache = {}; fetchValuation(); });
@@ -1678,11 +1688,18 @@
         $("#results").classList.add("hidden");
         $("#search-btn").disabled = true;
         $("#watchlist-add").classList.remove("hidden");
+
+        if (searchAbort) searchAbort.abort();
+        searchAbort = new AbortController();
+        const mySeq = ++searchSeq;
+
         try {
             const url = `/api/stock/${encodeURIComponent(ticker)}?period=${currentPeriod}&market=${currentMarket}${settingsToQuery()}`;
-            const res = await fetch(url);
-            if (!res.ok) { const d = await res.json(); throw new Error(d.error || t("fetchError")); }
+            const res = await fetch(url, { signal: searchAbort.signal });
+            if (mySeq !== searchSeq) return;
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || t("fetchError")); }
             const data = await res.json();
+            if (mySeq !== searchSeq) return;
             $("#stock-name").textContent = data.name;
             $("#stock-ticker").textContent = data.ticker;
             $("#results").classList.remove("hidden");
@@ -1701,14 +1718,18 @@
             const sKey = `${currentTicker}-${currentMarket}`;
             if (!summaryCache[sKey]) {
                 fetch(`/api/summary/${encodeURIComponent(ticker)}?market=${currentMarket}`)
-                    .then(r => r.ok ? r.json() : null).then(d => { if (d && !d.error) summaryCache[sKey] = d; });
+                    .then(r => r.ok ? r.json() : null).then(d => { if (d && !d.error) summaryCache[sKey] = d; }).catch(() => {});
             }
         } catch (err) {
+            if (err.name === "AbortError") return;
+            if (mySeq !== searchSeq) return;
             $("#error-msg").textContent = err.message;
             $("#error-msg").classList.remove("hidden");
         } finally {
-            $("#loading").classList.add("hidden");
-            $("#search-btn").disabled = false;
+            if (mySeq === searchSeq) {
+                $("#loading").classList.add("hidden");
+                $("#search-btn").disabled = false;
+            }
         }
     }
 
