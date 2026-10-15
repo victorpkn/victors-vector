@@ -4,6 +4,8 @@
 
 Victor's Vector brings technical analysis, company fundamentals, valuation, research, portfolio tools, alerts, and paper trading into one browser-based application. Choose 🇹🇭 **SET** or 🇺🇸 **US**, search a ticker, and move from a high-level analyst brief into the underlying charts and numbers.
 
+**Live application:** [victors-vector.onrender.com](https://victors-vector.onrender.com)
+
 The application is designed for investors who want a repeatable research process without moving between several websites. It supports English and Thai, uses Yahoo Finance as its market-data source, and generates its analysis from structured market and financial data rather than an LLM.
 
 > **Educational use only.** This project does not provide financial, investment, or trading advice.
